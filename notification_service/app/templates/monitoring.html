@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Notification Service Monitoring</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #4a6fa5; color: white; padding: 20px; border-radius: 10px 10px 0 0; }
+        .button-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 30px 0; }
+        .button { background: white; border: none; padding: 25px; border-radius: 10px; cursor: pointer; 
+                  box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s; text-align: left; }
+        .button:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .button h3 { margin: 0 0 10px 0; color: #333; }
+        .button p { margin: 0; color: #666; }
+        .button.stats { border-left: 5px solid #4CAF50; }
+        .button.events { border-left: 5px solid #2196F3; }
+        .button.celery { border-left: 5px solid #FF9800; }
+        .button.health { border-left: 5px solid #F44336; }
+        .button.docs { border-left: 5px solid #9C27B0; }
+        .result { background: white; padding: 20px; border-radius: 10px; margin-top: 30px; 
+                  box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        pre { background: #f8f8f8; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Notification Service Monitoring</h1>
+            <p>Микросервис для обработки уведомлений и фоновых задач</p>
+        </div>
+        
+        <div class="button-grid">
+            <button class="button stats" onclick="loadStats()">
+                <h3>📊 Статистика</h3>
+                <p>Общая статистика событий, Redis статус, последние события</p>
+            </button>
+            
+            <button class="button events" onclick="loadEvents()">
+                <h3>📋 События</h3>
+                <p>История всех событий с пагинацией</p>
+            </button>
+            
+            <button class="button celery" onclick="loadCeleryTasks()">
+                <h3>⚡ Celery Задачи</h3>
+                <p>Статус фоновых задач и очередей</p>
+            </button>
+            
+            <button class="button health" onclick="loadHealth()">
+                <h3>❤️ Health Check</h3>
+                <p>Проверка здоровья сервиса, БД и Redis</p>
+            </button>
+            
+            <button class="button docs" onclick="openSwagger()">
+                <h3>📚 API Документация</h3>
+                <p>Полная документация API в Swagger UI</p>
+            </button>
+        </div>
+        
+        <div class="result" id="result">
+            <h3>Результат:</h3>
+            <p>Нажмите на любую кнопку для загрузки данных</p>
+        </div>
+    </div>
+    
+    <script>
+        function loadStats() {
+            fetch('/monitoring/stats')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('result').innerHTML = `
+                        <h3>📊 Статистика</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p><a href="/monitoring/stats" target="_blank">Открыть как JSON</a></p>
+                    `;
+                });
+        }
+        
+        function loadEvents() {
+            fetch('/monitoring/events?limit=10')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('result').innerHTML = `
+                        <h3>📋 Последние 10 событий</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p><a href="/monitoring/events" target="_blank">Все события</a></p>
+                    `;
+                });
+        }
+        
+        function loadCeleryTasks() {
+            fetch('/monitoring/celery-tasks')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('result').innerHTML = `
+                        <h3>⚡ Celery Задачи</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p><a href="http://localhost:5555" target="_blank">Открыть Flower (мониторинг Celery)</a></p>
+                    `;
+                });
+        }
+        
+        function loadHealth() {
+            fetch('/monitoring/health')
+                .then(r => r.json())
+                .then(data => {
+                    const status = data.status === 'healthy' ? '✅ Здоров' : '⚠️ Проблемы';
+                    document.getElementById('result').innerHTML = `
+                        <h3>❤️ Health Check: ${status}</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                });
+        }
+        
+        function openSwagger() {
+            window.open('/docs', '_blank');
+        }
+        
+        // Автоматически загружаем статистику при открытии
+        window.onload = loadStats;
+    </script>
+</body>
+</html>

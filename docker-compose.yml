@@ -1,0 +1,85 @@
+version: '3.8'
+services:
+  task_db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=task_user
+      - POSTGRES_PASSWORD=task_pass
+      - POSTGRES_DB=task_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - task_db_data:/var/lib/postgresql/data
+    networks:
+      - todonet
+
+  notification_db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=notif_user
+      - POSTGRES_PASSWORD=notif_pass
+      - POSTGRES_DB=notification_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+    networks:
+      - todonet
+
+  redis:
+    image: redis:7
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    networks:
+      - todonet
+
+  task_service:
+    build: ./task_service
+    env_file: .env
+    depends_on:
+      - task_db
+      - redis
+    ports:
+      - "8000:8000"
+    networks:
+      - todonet
+
+  notification_service:
+    build: ./notification_service
+    env_file: .env
+    depends_on:
+      - notification_db
+      - redis
+    ports:
+      - "8001:8001"
+    networks:
+      - todonet
+
+  celery_worker:
+    build: ./notification_service
+    command: ["/start-celery.sh"]
+    env_file: .env
+    depends_on:
+      - notification_db
+      - redis
+    networks:
+      - todonet
+
+  flower:
+    image: mher/flower:latest
+    env_file: .env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    networks:
+      - todonet
+
+volumes:
+  task_db_data:
+  notification_db_data:
+
+networks:
+  todonet:
+    driver: bridge
