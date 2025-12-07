@@ -75,6 +75,17 @@ services:
       - redis
     networks:
       - todonet
+  celery_beat:
+    build: ./notification_service
+    command: ["celery", "-A", "app.tasks.celery_app", "beat", "--loglevel=info"]
+    env_file: .env
+    depends_on:
+      - notification_db
+      - redis
+      - task_service
+    networks:
+      - todonet
+
 
 volumes:
   task_db_data:

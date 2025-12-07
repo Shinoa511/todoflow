@@ -19,7 +19,7 @@ def consume():
     for message in pubsub.listen():
         if message['type'] != 'message':
             continue
-            
+        
         try:
             data = json.loads(message['data'].decode('utf-8'))
         except Exception as e:
@@ -28,6 +28,14 @@ def consume():
         
         event = data.get('event')
         payload = data.get('task')
+        
+        # ← ДОБАВЬТЕ ЭТУ ПРОВЕРКУ ↓
+        if event == 'task_due':
+            # События task_due уже обрабатываются в scheduled_check
+            # Не логируем их повторно, чтобы избежать дублей
+            print(f'[Consumer] Skipping task_due (already handled by scheduled_check)')
+            continue  # ← ПРОПУСКАЕМ!
+        # ← КОНЕЦ ДОБАВЛЕНИЯ ↑
         
         # Логируем в БД
         log_event(event, payload)
@@ -38,7 +46,7 @@ def consume():
                 args=(payload.get('id'), payload.get('title')),
                 countdown=10
             )
-
+        
 def start_consumer_background():
     """Запускает consumer в фоновом потоке"""
     thread = threading.Thread(target=consume, daemon=True)
