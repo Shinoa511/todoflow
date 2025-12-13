@@ -4,6 +4,7 @@ import os
 import redis
 from .logger import log_event
 from .tasks import send_reminder
+from .tasks import celery_app
 
 REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 CHANNEL = 'tasks'
@@ -42,8 +43,9 @@ def consume():
         
         # Запускаем напоминание для новых задач
         if event == 'task_created':
-            send_reminder.apply_async(
-                args=(payload.get('id'), payload.get('title')),
+            celery_app.send_task(
+                'app.tasks.send_reminder',
+		args=[payload.get('id'), payload.get('title')],
                 countdown=10
             )
         
